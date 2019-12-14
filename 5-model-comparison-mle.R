@@ -1,5 +1,6 @@
 library(readr)
 library(ggplot2)
+library(dplyr)
 
 # the final exercise here is to apply maximum likelihood estimating to a cognitive model of categorization.
 # we've seen the exemplar model several times now. the basic idea is that we remember all instances of a category,
@@ -87,13 +88,29 @@ exemplar.model.likelihood <- function(params, experiment.data){
   sensitivity <- params[1]
   decay.rate <- params[2]
   
-  # fill in the rest...
+  sum.log.likelihood <- 0
+  
+  for(i in 11:nrow(experiment.data)){
+    current.trial <- experiment.data[i,]
+    stim.x <- current.trial$x
+    stim.y <- current.trial$y
+    stim.category <- current.trial$category
+    p.correct <- exemplar.model.predict(experiment.data[1:(i-1),], stim.x, stim.y, stim.category, sensitivity, decay.rate)
+    if(current.trial$correct){
+      sum.log.likelihood <- sum.log.likelihood + log(p.correct)
+    } else {
+      sum.log.likelihood <- sum.log.likelihood + log(1-p.correct)
+    }
+  }
+  
+  return(-sum.log.likelihood)
 }
 
 # Use optim() to fit the model to this data.
 # Note: In optim() you can tell it to display updates as it goes with:
 # optim( ... , control=list(trace=4))
 
+results.full <- optim(par=c(0.1, 0.1), fn=exemplar.model.likelihood, experiment.data = categorization.data, control=list(trace=4))
 
 # Now try fitting a restricted version of the model, where we assume there is no decay.
 # Fix the decay.rate parameter to 0, and use optim to fit the sensitivity parameter.
@@ -103,11 +120,58 @@ exemplar.model.likelihood <- function(params, experiment.data){
 # The brent method also requires an upper and lower boundary:
 # optim( ..., upper=100, lower=0, method="Brent")
 
+exemplar.model.restricted.likelihood <- function(params, experiment.data){
+  sensitivity <- params[1]
+  decay.rate <- 0
+  
+  sum.log.likelihood <- 0
+  
+  for(i in 11:nrow(experiment.data)){
+    current.trial <- experiment.data[i,]
+    stim.x <- current.trial$x
+    stim.y <- current.trial$y
+    stim.category <- current.trial$category
+    p.correct <- exemplar.model.predict(experiment.data[1:(i-1),], stim.x, stim.y, stim.category, sensitivity, decay.rate)
+    if(current.trial$correct){
+      sum.log.likelihood <- sum.log.likelihood + log(p.correct)
+    } else {
+      sum.log.likelihood <- sum.log.likelihood + log(1-p.correct)
+    }
+  }
+  
+  return(-sum.log.likelihood)
+}
+
+# Now try fitting a restricted version of the model, where we assume there is no decay.
+# Fix the decay.rate parameter to 0, and use optim to fit the sensitivity parameter.
+# You can do this by copying the likelihood function above and just setting decay.rate to 0 inside the function.
+# Note that you will need to use method="Brent" in optim() instead of Nelder-Mead because there is 
+# only one parameter to fit.
+# The brent method also requires an upper and lower boundary:
+# optim( ..., upper=100, lower=0, method="Brent")
+
+results.restricted <- optim(par=c(0.1), fn=exemplar.model.restricted.likelihood, experiment.data = categorization.data, method="Brent", lower=0, upper=100, control=list(trace=4))
 
 # What's the log likelihood of both models? (see the $value in the result of optim),
 # remember this is the negative log likeihood, so multiply by -1.
+
+LL.full <- -results.full$value
+LL.restricted <- -results.restricted$value
 
 # What's the AIC and BIC for both models? Which model should we prefer?
 # AIC formula = 2k - 2ln(L)
 # BIC formula = k*ln(N) - 2ln(L)
 # k = number of free parameters, N = sample size, L = likelihood, ln(L) = log likelihood
+
+k.full <- 2
+k.restricted <- 1
+
+N <- 500
+
+AIC.full <- 2*k.full - 2 * LL.full
+AIC.restricted <- 2*k.restricted - 2 * LL.restricted
+
+BIC.full <- k.full*log(N) - 2 * LL.full
+BIC.restricted <- k.restricted*log(N) - 2 * LL.restricted
+
+# Both AIC and BIC prefer the full model!
