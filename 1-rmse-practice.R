@@ -30,6 +30,12 @@ model.data <- data.frame(x=data.x, y=data.y)
 
 # the answer is 0.935
 
+model.data <- model.data %>% 
+  mutate(predicted.y = intercept + slope*x) %>%
+  mutate(square.error = (predicted.y - y)^2)
+
+sqrt(mean(model.data$square.error))
+
 
 
 # when you finish, if you are waiting: try to manually find a slope and intercept value that produces a

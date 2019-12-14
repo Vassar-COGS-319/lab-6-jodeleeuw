@@ -24,7 +24,13 @@ calculate.rmse <- function(parameters){
   intercept <- parameters[1]
   slope <- parameters[2]
   
-  # fill in the rest...
+  model.data <- model.data %>% 
+    mutate(predicted.y = intercept + slope*x) %>%
+    mutate(square.error = (predicted.y - y)^2)
+  
+  rmse <- sqrt(mean(model.data$square.error))
+  
+  return(rmse)
 }
 
 # now we use optim to find the best fitting parameters (minimize RMSE)

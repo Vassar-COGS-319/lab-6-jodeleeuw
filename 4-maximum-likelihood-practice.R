@@ -25,8 +25,17 @@ calculate.likelihood <- function(parameters){
   intercept <- parameters[1]
   slope <- parameters[2]
   
-  # fill in the rest...
+  model.data <- model.data %>%
+    mutate(y.pred = intercept + slope*x) %>%
+    mutate(log.prob.y = dnorm(y, mean=y.pred, sd=1, log=T))
+  
+  return(-sum(model.data$log.prob.y))
 }
 
 # run optim() to find the best fitting parameters and plot a line showing the best model fit.
+result <- optim(par=c(0,0), calculate.likelihood)
 
+best.intercept <- result$par[1]
+best.slope <- result$par[2]
+
+abline(a=best.intercept, b=best.slope, col="blue")

@@ -13,22 +13,33 @@ tea.tasting.data <- data.frame(
 # the binomial distribution for this, specifically the dbinom() function, which gives the
 # density of the binomial distribution.
 
+theta <- 0.5
 
+tea.tasting.data <- tea.tasting.data %>%
+  mutate(p.responses = dbinom(correct.responses, 8, theta))
 
-
+likelihood <- prod(tea.tasting.data %>% pull(p.responses))
 
 
 # second: generalize your code above into a function that takes a single argument, theta,
 # and calculates the likelihood for that model.
 
 calculate.likelihood <- function(theta){
-
+  tea.tasting.data <- tea.tasting.data %>%
+    mutate(p.responses = dbinom(correct.responses, 8, theta))
   
+  likelihood <- prod(tea.tasting.data$p.responses)
+  
+  return(likelihood)
 }
 
 # third: generate a plot with theta values on the X-axis, and L(H) on the Y-axis.
 # hint: create an array of X values from 0 to 1 in small steps, then use sapply() to
 # get the corresponding array of Y values.
 
+x <- seq(from=0, to=1, by=0.01)
+y <- sapply(x, calculate.likelihood)
+
+plot(x,y,type="l")
 
 
